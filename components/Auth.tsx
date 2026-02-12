@@ -15,6 +15,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Verificação defensiva de Crypto (necessário para bibliotecas Liquid/Wasm)
+    React.useEffect(() => {
+        if (typeof window !== 'undefined' && !window.crypto) {
+            console.warn("[Auth] window.crypto não encontrado. Algumas funções podem falhar.");
+        }
+    }, []);
     const [supportLinks, setSupportLinks] = useState({ whatsapp: '', telegram: '' });
 
     // Estados do formulário

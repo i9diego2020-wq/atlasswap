@@ -58,4 +58,5 @@ export type ViewType =
   | 'admin-statement'
   | 'settings'
   | 'docs'
-  | 'support';
+  | 'support'
+  | 'liquid-test';

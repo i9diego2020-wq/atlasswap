@@ -9,7 +9,8 @@ import {
   ClipboardList,
   Users,
   Settings,
-  PieChart
+  PieChart,
+  Activity
 } from 'lucide-react';
 import { ViewType } from '../types';
 

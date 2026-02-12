@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
 
 interface BadgeProps {
     status: 'completed' | 'pending' | 'failed' | string;
@@ -13,9 +13,27 @@ interface BadgeProps {
 const Badge: React.FC<BadgeProps> = ({ status, label }) => {
     const getStatusConfig = (status: string) => {
         switch (status) {
-            case 'completed':
+            case 'confirmed_depix':
+                return {
+                    style: 'bg-blue-50 text-blue-600 border-blue-100',
+                    icon: <CheckCircle2 size={12} className="mr-1" />,
+                    label: label || 'DePix Confirmado'
+                };
+            case 'usdt_sending':
+                return {
+                    style: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+                    icon: <Loader2 size={12} className="mr-1 animate-spin" />,
+                    label: label || 'Enviando USDT'
+                };
+            case 'usdt_sent':
                 return {
                     style: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+                    icon: <CheckCircle2 size={12} className="mr-1" />,
+                    label: label || 'USDT Enviado'
+                };
+            case 'completed':
+                return {
+                    style: 'bg-emerald-500 text-white border-emerald-600',
                     icon: <CheckCircle2 size={12} className="mr-1" />,
                     label: label || 'Concluído'
                 };
