@@ -1,7 +1,6 @@
-import { Buffer } from 'buffer';
 
-(window as any).Buffer = Buffer;
-(globalThis as any).Buffer = Buffer;
+// Note: Buffer and process are now mostly handled by vite-plugin-node-polyfills
+// we only keep this file for process.nextTick which some old libs need.
 
 // Polyfill process for libraries that expect it
 if (typeof (window as any).process === 'undefined') {
