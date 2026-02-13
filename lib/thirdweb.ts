@@ -20,7 +20,8 @@ export const sendUSDT = async (toAddress: string, amount: number) => {
     // Converter amount para base 10^6 (USDT na Polygon tem 6 decimais)
     const amountInUnits = (amount * 1000000).toFixed(0);
 
-    const url = `${ENGINE_URL}/backend-wallet/${CHAIN_ID}/extend-erc20/transfer`;
+    const url = `${ENGINE_URL}/backend-wallet/${CHAIN_ID}/erc20/transfer`;
+    console.log(`[Thirdweb] Enviando consulta para: ${url}`);
 
     try {
         const response = await fetch(url, {

@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
         'buffer': path.resolve(__dirname, 'node_modules/buffer/index.js'),
+        'typeforce': path.resolve(__dirname, 'lib/typeforce-patch.ts'),
       }
     }
   };

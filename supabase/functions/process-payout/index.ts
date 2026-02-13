@@ -32,7 +32,15 @@ serve(async (req) => {
 
         // 3. Chamar Thirdweb Engine
         const amountInUnits = (record.amount_usdt * 1000000).toFixed(0)
-        const engineUrl = `${ENGINE_URL}/backend-wallet/${CHAIN_ID}/extend-erc20/transfer`
+        const engineUrl = `${ENGINE_URL}/backend-wallet/${CHAIN_ID}/erc20/transfer`
+
+        console.log(`[Payout] Chamando Engine: ${engineUrl}`)
+        const requestBody = {
+            toAddress: record.wallet_address,
+            amount: amountInUnits,
+            tokenAddress: USDT_ADDRESS
+        }
+        console.log(`[Payout] Paylod:`, JSON.stringify(requestBody))
 
         let response;
         try {
@@ -43,11 +51,7 @@ serve(async (req) => {
                     'Authorization': `Bearer ${ACCESS_TOKEN}`,
                     'x-backend-wallet-address': BACKEND_WALLET
                 },
-                body: JSON.stringify({
-                    toAddress: record.wallet_address,
-                    amount: amountInUnits,
-                    tokenAddress: USDT_ADDRESS
-                })
+                body: JSON.stringify(requestBody)
             })
         } catch (fetchErr: any) {
             console.error("[Payout] Erro de rede/fetch:", fetchErr)
