@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
       'global': 'globalThis',
     },
     optimizeDeps: {
+      include: ['buffer'],
       esbuildOptions: {
         define: {
           global: 'globalThis',
@@ -40,6 +41,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        'buffer': path.resolve(__dirname, 'node_modules/buffer/index.js'),
       }
     }
   };
