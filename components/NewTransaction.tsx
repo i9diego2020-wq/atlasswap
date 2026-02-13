@@ -315,7 +315,7 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-gray-50 shadow-sm">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">VALOR ENVIADO</p>
           <p className="text-xl font-black text-gray-800">R$ {numericAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
@@ -331,6 +331,10 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
         <div className="bg-white p-5 rounded-2xl border border-gray-50 shadow-sm">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">DÓLAR ATLAS</p>
           <p className="text-xl font-black text-gray-800">R$ {usdtPrice.toFixed(2)}</p>
+        </div>
+        <div className="bg-emerald-500 p-5 rounded-2xl border border-emerald-400 shadow-lg shadow-emerald-100/50 text-white">
+          <p className="text-[10px] font-black text-emerald-100 uppercase tracking-widest mb-1">VOCÊ RECEBERÁ</p>
+          <p className="text-xl font-black">{usdtReceived.toFixed(2)} USDT</p>
         </div>
       </div>
 
