@@ -315,26 +315,74 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-50 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">VALOR ENVIADO</p>
           <p className="text-xl font-black text-gray-800">R$ {numericAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-50 shadow-sm text-pink-500">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-rose-500">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">TAXA (1%)</p>
           <p className="text-xl font-black">R$ {fee1Percent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-50 shadow-sm">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">TAXA FIXA</p>
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+            TAXA FIXA <Info size={10} className="text-gray-300" />
+          </p>
           <p className="text-xl font-black text-indigo-600">R$ {fixedFee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-50 shadow-sm">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">DÓLAR ATLAS</p>
-          <p className="text-xl font-black text-gray-800">R$ {usdtPrice.toFixed(2)}</p>
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">VALOR APÓS TAXAS</p>
+          <p className="text-xl font-black text-gray-800">R$ {amountAfterFees.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
         </div>
-        <div className="bg-emerald-500 p-5 rounded-2xl border border-emerald-400 shadow-lg shadow-emerald-100/50 text-white">
-          <p className="text-[10px] font-black text-emerald-100 uppercase tracking-widest mb-1">VOCÊ RECEBERÁ</p>
-          <p className="text-xl font-black">{usdtReceived.toFixed(2)} USDT</p>
+      </div>
+
+      {/* Card Destaque: Você Receberá */}
+      <div className="bg-emerald-600 p-8 rounded-[2.5rem] shadow-xl shadow-emerald-100/50 text-white relative overflow-hidden group">
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-black text-emerald-100 uppercase tracking-widest">VOCÊ RECEBERÁ</p>
+            <div className="flex items-baseline space-x-2">
+              <span className="text-5xl font-black tracking-tight">{usdtReceived.toFixed(2)}</span>
+              <span className="text-xl font-bold text-emerald-100">USDT</span>
+            </div>
+          </div>
+          <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-md">
+            <DollarSign size={40} className="text-white" />
+          </div>
+        </div>
+        {/* Efeito Visual */}
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors"></div>
+      </div>
+
+      {/* Informações da Rede e Cotação */}
+      <div className="bg-white/50 backdrop-blur-sm p-8 rounded-[2rem] border border-gray-100/50 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3 text-indigo-600">
+            <Activity size={20} />
+            <h3 className="font-black text-sm uppercase tracking-tight">Informações da Rede e Cotação</h3>
+          </div>
+          <div className="flex items-center space-x-2 text-[10px] font-bold text-gray-400">
+            <Clock size={12} />
+            <span className="uppercase tracking-widest">ATUALIZADO AGORA</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">COTAÇÃO DO DÓLAR (COM SPREAD)</p>
+            <div className="flex items-center space-x-3">
+              <p className="text-2xl font-black text-gray-800">1 USDT = R$ {usdtPrice.toFixed(2)}</p>
+              <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-black rounded-md uppercase tracking-tighter">TEMPO REAL</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">TAXA DA REDE DEPIX</p>
+            <div className="flex items-center space-x-3">
+              <p className="text-2xl font-black text-gray-800">1 DePiX = {(1 / usdtPrice).toFixed(4)} USDT</p>
+              <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-black rounded-md uppercase tracking-tighter">REDE ATIVA</span>
+            </div>
+          </div>
         </div>
       </div>
 
