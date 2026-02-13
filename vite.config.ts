@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
       wasm(),
       topLevelAwait(),
       nodePolyfills({
-        include: ['process', 'util', 'stream', 'events', 'crypto'],
+        include: ['process', 'util', 'stream', 'events'],
         globals: {
           Buffer: true, // Re-enable standard automation
           global: true,

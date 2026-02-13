@@ -3,7 +3,6 @@ import * as liquid from 'liquidjs-lib';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
 import { SLIP77Factory } from 'slip77';
-import * as crypto from 'crypto';
 import { supabase } from './supabase';
 
 // PART 5: THE REMASTERED RUNTIME PATCH
@@ -58,6 +57,30 @@ const bip32 = BIP32Factory(ecc);
 const slip77 = SLIP77Factory(ecc);
 
 /**
+ * Manual HMAC-SHA256 implementation using liquid.crypto.sha256 (browser-safe)
+ */
+function hmacSha256(key: Buffer, message: Buffer): Buffer {
+    const blockSize = 64;
+    let k = key;
+    if (k.length > blockSize) {
+        k = liquid.crypto.sha256(k);
+    }
+    const kPadded = Buffer.alloc(blockSize, 0);
+    k.copy(kPadded);
+
+    const ipad = Buffer.alloc(blockSize, 0x36);
+    const opad = Buffer.alloc(blockSize, 0x5c);
+
+    for (let i = 0; i < blockSize; i++) {
+        ipad[i] ^= kPadded[i];
+        opad[i] ^= kPadded[i];
+    }
+
+    const innerHash = liquid.crypto.sha256(Buffer.concat([ipad, message]));
+    return liquid.crypto.sha256(Buffer.concat([opad, innerHash]));
+}
+
+/**
  * Deriva um endereço Liquid a partir de um índice
  */
 export function deriveLiquidAddress(index: number) {
@@ -72,13 +95,10 @@ export function deriveLiquidAddress(index: number) {
         }, { validate: false }); // DISABLING VALIDATION IN PRODUCTION
 
         // BLOCKSTREAM GREEN COMPATIBILITY: Green uses HMAC-SHA256 for blinding keys
-        // Standard SLIP-77 uses SHA512, but Green uses SHA256.
         const masterBlindingKey = Buffer.from(MASTER_BLINDING_KEY, 'hex');
         const script = p2wpkh.output!;
 
-        const hmac = crypto.createHmac('sha256', masterBlindingKey);
-        hmac.update(script);
-        const privateKey = hmac.digest().slice(0, 32);
+        const privateKey = hmacSha256(masterBlindingKey, script).slice(0, 32);
         const blindingPubKey = Buffer.from(ecc.pointFromScalar(privateKey, true)!);
 
         const confidential = liquid.address.toConfidential(

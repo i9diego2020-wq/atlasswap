@@ -22,7 +22,6 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
   const [variableFeePercent, setVariableFeePercent] = useState(1);
   const [dynamicFixedFee, setDynamicFixedFee] = useState(5);
 
-
   // Estados do Pagamento Liquid
   const [liquidAddress, setLiquidAddress] = useState('');
   const [currentTxId, setCurrentTxId] = useState('');
@@ -124,7 +123,6 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
     return () => clearInterval(interval);
   }, [step, currentTxId]);
 
-
   const usdtQuote = usdtPrice;
   const numericAmount = parseFloat(amount) || 0;
   const feeVariável = numericAmount * (variableFeePercent / 100);
@@ -156,6 +154,7 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
       setCurrentTxId(txId);
 
       // 1. Obter próximo índice Liquid
+
       const index = await getNextLiquidIndex();
 
       // 2. Derivar endereço
@@ -271,8 +270,8 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
             <span className="text-lg font-black uppercase tracking-tight">
               Envie exatamente: {numericAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} Depix
             </span>
-
           </div>
+
           <p className="text-gray-500 font-medium">O valor será convertido automaticamente para USDT na rede Polygon.</p>
         </div>
 
