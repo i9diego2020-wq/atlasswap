@@ -1,8 +1,6 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "experimentalDecorators": true,
-    "useDefineForClassFields": false,
     "module": "ESNext",
     "lib": [
       "ES2022",
@@ -10,29 +8,26 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "maxNodeModuleJsDepth": 0,
-    "types": [
-      "node"
-    ],
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "isolatedModules": true,
-    "moduleDetection": "force",
-    "allowJs": true,
+    "noEmit": true,
     "jsx": "react-jsx",
+    "strict": false,
+    "allowJs": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
       ]
-    },
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+    }
   },
   "include": [
     "App.tsx",
     "index.tsx",
-    "components/**/*",
-    "lib/**/*",
+    "components",
+    "lib",
     "types.ts",
     "polyfills.ts",
     "vite.config.ts"
@@ -40,6 +35,8 @@
   "exclude": [
     "node_modules",
     "supabase",
-    "dist"
+    "dist",
+    ".next",
+    "out"
   ]
 }
