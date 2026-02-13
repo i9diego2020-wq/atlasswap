@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       nodePolyfills({
         include: ['buffer', 'process', 'util', 'stream', 'events'],
         globals: {
-          Buffer: true,
+          Buffer: false,
           global: true,
           process: true,
         },

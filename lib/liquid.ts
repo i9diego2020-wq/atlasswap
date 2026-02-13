@@ -1,19 +1,9 @@
-
+import { Buffer } from 'buffer';
 import * as liquid from 'liquidjs-lib';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
 import { SLIP77Factory } from 'slip77';
 import { supabase } from './supabase';
-
-
-// Helper seguro para obter o Buffer global (lazy evaluation)
-const getBuffer = () => {
-    const B = (globalThis as any).Buffer || (window as any).Buffer;
-    if (!B) {
-        console.error("[Liquid] Buffer não encontrado no globalThis ou window.");
-    }
-    return B;
-};
 
 // Configurações extraídas do Descriptor
 const MASTER_BLINDING_KEY = 'd8dd37b1265d625c70c5a70edc6dbbb906f2765ddf4dc29a4fc396e92659ca19';
@@ -27,7 +17,6 @@ let cryptoTools: { bip32: any, slip77: any } | null = null;
 const initTools = () => {
     if (cryptoTools) return cryptoTools;
     try {
-        const Buffer = getBuffer();
         if (!Buffer) {
             throw new Error("Polyfill de Buffer não encontrado. Verifique a configuração do Vite.");
         }
@@ -84,8 +73,6 @@ export const deriveLiquidAddress = (index: number) => {
     try {
         const { bip32, slip77 } = initTools();
         const network = liquid.networks.liquid;
-        const Buffer = getBuffer();
-
         if (!Buffer) throw new Error("Buffer indisponível na derivação.");
 
         // 1. Derivar chave pública

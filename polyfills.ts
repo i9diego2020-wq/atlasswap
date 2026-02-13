@@ -1,8 +1,10 @@
+import { Buffer } from 'buffer';
 
-// Note: Buffer and process are now mostly handled by vite-plugin-node-polyfills
-// we only keep this file for process.nextTick which some old libs need.
+(window as any).Buffer = Buffer;
+(globalThis as any).Buffer = Buffer;
 
-// Polyfill process for libraries that expect it
+// Note: process and other polyfills are partialy handled by vite-plugin-node-polyfills
+// but we keep process.nextTick for old libraries.
 if (typeof (window as any).process === 'undefined') {
     (window as any).process = {
         version: 'v16.0.0',
