@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: '0.0.0.0',
     },
+    optimizeDeps: {
+      // Force these to be bundled with the rest of the app to respect our global patches
+      exclude: ['liquidjs-lib', 'typeforce', 'bip32', 'tiny-secp256k1', 'slip77']
+    },
     plugins: [
       react(),
       wasm(),
@@ -37,7 +41,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
-        // nuclear option: force every single import of 'buffer' to the exact same file
         'buffer': path.resolve(__dirname, 'node_modules/buffer/index.js'),
       }
     }

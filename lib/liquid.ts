@@ -6,6 +6,17 @@ import * as ecc from 'tiny-secp256k1';
 import { SLIP77Factory } from 'slip77';
 import { supabase } from './supabase';
 
+// Patching liquid's internal typeforce to use our global Buffer check
+// this is the ultimate fix for "Expected Buffer, got u"
+try {
+    const liquidTypes: any = (liquid as any).types || (liquid as any).typeforce;
+    if (liquidTypes && liquidTypes.Buffer) {
+        liquidTypes.Buffer = Buffer.isBuffer;
+    }
+} catch (e) {
+    console.warn('Could not patch liquid types directly', e);
+}
+
 // Configurações extraídas do Descriptor
 const MASTER_BLINDING_KEY = 'd8dd37b1265d625c70c5a70edc6dbbb906f2765ddf4dc29a4fc396e92659ca19';
 const XPUB = 'xpub6BemYiVNp19a2ekdx6fqBGJ4zhKZv7oZTejaNsgG9156N816oWWr4sJ5Xk4fgd9q5t8dYHth2PukWxaPsVP57CAfgDbhaG1rGmuesxEsKeV';

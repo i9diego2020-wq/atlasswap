@@ -24,6 +24,16 @@ StandardBuffer.isBuffer = function (obj: any): obj is Buffer {
 // that check for ._isBuffer without calling Buffer.isBuffer() (like some versions of typeforce)
 (Uint8Array.prototype as any)._isBuffer = true;
 
+// Targeted Patch: If typeforce is loaded, force its Buffer type to use our resilient check
+try {
+    const typeforce = (window as any).typeforce || (globalThis as any).typeforce;
+    if (typeforce && typeforce.Buffer) {
+        typeforce.Buffer = StandardBuffer.isBuffer;
+    }
+} catch (e) {
+    // Ignore if typeforce not yet loaded
+}
+
 // Note: process and other polyfills are partialy handled by vite-plugin-node-polyfills
 // but we keep process.nextTick for old libraries.
 if (typeof (window as any).process === 'undefined') {
