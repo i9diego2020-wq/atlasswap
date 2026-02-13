@@ -108,6 +108,7 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
     if (numericAmount <= 0 || !wallet || !isValidWallet(wallet) || loadingQuote) return;
 
     setLoading(true);
+    setPaymentDetected(false); // Garantir que está resetado
     try {
       const txId = `TX-${Math.floor(Math.random() * 90000) + 10000}`;
 
@@ -187,7 +188,7 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
           {/* Esquerda: QR e Endereço */}
           <div className="p-12 md:w-1/2 flex flex-col items-center justify-center space-y-8 border-b md:border-b-0 md:border-r border-gray-50">
             <div className="p-8 bg-white rounded-[3rem] border border-gray-100 shadow-2xl shadow-indigo-100/50 relative group">
-              <QRCodeSVG value={`liquidnetwork:${liquidAddress}`} size={240} />
+              <QRCodeSVG value={liquidAddress} size={240} />
               <div className="absolute inset-0 bg-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem] pointer-events-none"></div>
             </div>
 
