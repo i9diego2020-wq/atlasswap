@@ -1,10 +1,10 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,7 +21,8 @@ export default defineConfig(({ mode }) => {
       wasm(),
       topLevelAwait(),
       nodePolyfills({
-        include: ['buffer', 'process', 'util', 'stream', 'events'],
+        // Removemos 'buffer' daqui para que o pacote real do node_modules seja usado
+        include: ['process', 'util', 'stream', 'events'],
         globals: {
           Buffer: false,
           global: true,
@@ -34,18 +35,9 @@ export default defineConfig(({ mode }) => {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'global': 'globalThis',
     },
-    optimizeDeps: {
-      include: ['buffer'],
-      esbuildOptions: {
-        define: {
-          global: 'globalThis',
-        },
-      },
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
-        'buffer': path.resolve(__dirname, 'node_modules/buffer/index.js'),
       }
     }
   };
