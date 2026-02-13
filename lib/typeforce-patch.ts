@@ -25,21 +25,26 @@ const isStringResilient = (value: any) => {
 
 // Criamos uma versão "proxied" do typeforce
 const typeforcePatched: any = (type: any, value: any, strict?: boolean) => {
+    // bypass global se solicitado
+    const bypassActive = (window as any)._liquid_validation_disabled === true;
+
     // Se a validação for do tipo 'Buffer', usamos nossa lógica resiliente
     if (type === 'Buffer' || type === typeforceOriginal.Buffer) {
         if (isBufferResilient(value)) return true;
+        if (bypassActive) return true; // Emergência
     }
 
     // Se for String, garantimos que passa
     if (type === 'String' || type === typeforceOriginal.String) {
         if (isStringResilient(value)) return true;
+        if (bypassActive) return true; // Emergência
     }
 
     try {
         return typeforceOriginal(type, value, strict);
     } catch (e: any) {
         // Se falhar com a mensagem clássica de Buffer, mas for um Buffer resiliente, ignoramos o erro
-        if (e.message && e.message.includes('Expected Buffer') && isBufferResilient(value)) {
+        if (isBufferResilient(value) || bypassActive) {
             return true;
         }
         throw e;

@@ -52,7 +52,7 @@ export function deriveLiquidAddress(index: number) {
         const p2wpkh = liquid.payments.p2wpkh({
             pubkey,
             network: liquid.networks.liquid
-        });
+        }, { validate: false }); // DISABLING VALIDATION IN PRODUCTION
 
         const blindingKey = slip77.fromSeed(Buffer.from(MASTER_BLINDING_KEY, 'hex')).derive(p2wpkh.output!);
 

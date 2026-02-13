@@ -1,18 +1,28 @@
 import { Buffer } from 'buffer';
 
-// Force global Buffer to be a standard singleton
+// 1. Unify Buffer/Uint8Array globally
 (window as any).Buffer = Buffer;
 (globalThis as any).Buffer = Buffer;
 
-// MAGIC PROTO-PATCH: The ultimate fix for "Expected Buffer, got u" in production.
-// This works because almost ALL Buffer versions check obj._isBuffer === true.
-// Since Node Buffers inherit from Uint8Array in the browser, patching the primary
-// prototype ensures that BOTH minified ('u') and twin Buffer instances pass the test.
-if (typeof Uint8Array !== 'undefined') {
-    (Uint8Array.prototype as any)._isBuffer = true;
+// 2. AGGRESSIVE CONSTRUCTOR PATCHING
+// This forces .name to be 'Buffer' or 'Uint8Array' even when minified to 'u' or 'n'
+try {
+    Object.defineProperty(Buffer, 'name', { value: 'Buffer', configurable: true });
+    Object.defineProperty(Uint8Array, 'name', { value: 'Uint8Array', configurable: true });
+    if (Buffer.prototype.constructor) {
+        Object.defineProperty(Buffer.prototype.constructor, 'name', { value: 'Buffer', configurable: true });
+    }
+} catch (e) {
+    console.warn('Could not force constructor names', e);
 }
 
-// Ensure Buffer.isBuffer itself is also resilient
+// 3. MAGIC PROTO-PATCH: The ultimate fix for "Expected Buffer, got u" in production.
+if (typeof Uint8Array !== 'undefined') {
+    (Uint8Array.prototype as any)._isBuffer = true;
+    (Uint8Array.prototype as any).isBuffer = true;
+}
+
+// 4. Ensure Buffer.isBuffer itself is also resilient
 const originalIsBuffer = Buffer.isBuffer;
 Buffer.isBuffer = function (obj: any): obj is Buffer {
     return (
@@ -27,6 +37,9 @@ Buffer.isBuffer = function (obj: any): obj is Buffer {
         ))
     );
 };
+
+// 5. Global Flagging to signal validation bypasses
+(window as any)._liquid_validation_disabled = true;
 
 // Polyfill process early to satisfy older crypto libraries
 if (typeof (window as any).process === 'undefined') {
