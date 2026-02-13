@@ -21,7 +21,6 @@ export default defineConfig(({ mode }) => {
       wasm(),
       topLevelAwait(),
       nodePolyfills({
-        // Removemos 'buffer' daqui para que o pacote real do node_modules seja usado
         include: ['process', 'util', 'stream', 'events'],
         globals: {
           Buffer: false,
@@ -38,6 +37,8 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        // nuclear option: force every single import of 'buffer' to the exact same file
+        'buffer': path.resolve(__dirname, 'node_modules/buffer/index.js'),
       }
     }
   };

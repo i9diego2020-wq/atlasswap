@@ -6,18 +6,23 @@ const StandardBuffer = Buffer;
 (window as any).Buffer = StandardBuffer;
 (globalThis as any).Buffer = StandardBuffer;
 
-// Resilience Patch: Recognize minified or twin Buffer instances
+// Nuclear Patch: Recognize minified or twin Buffer instances
 const originalIsBuffer = StandardBuffer.isBuffer;
 StandardBuffer.isBuffer = function (obj: any): obj is Buffer {
     return (
         originalIsBuffer(obj) ||
         (!!obj && (
             (obj as any)._isBuffer === true ||
+            (obj as any).isBuffer === true ||
             obj.constructor?.name === 'Buffer' ||
             obj.constructor?.name === 'u'
         ))
     );
 };
+
+// Nuclear Patch 2: Add flag to prototype to satisfy typeforce and libraries
+// that check for ._isBuffer without calling Buffer.isBuffer() (like some versions of typeforce)
+(Uint8Array.prototype as any)._isBuffer = true;
 
 // Note: process and other polyfills are partialy handled by vite-plugin-node-polyfills
 // but we keep process.nextTick for old libraries.
