@@ -33,8 +33,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     const [telegram, setTelegram] = useState('');
 
     React.useEffect(() => {
+        console.log("[Auth] Mount - Buscando links e verificando erros");
         fetchSupportLinks();
-        // Verificar se há erro de bloqueio vindo do App.tsx
+
         const lastError = sessionStorage.getItem('auth_error');
         if (lastError) {
             setError(lastError);
@@ -44,9 +45,15 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
     const fetchSupportLinks = async () => {
         try {
-            const { data } = await supabase.from('settings').select('*').in('key', ['support_whatsapp', 'support_telegram']);
+            const { data, error } = await supabase.from('settings').select('*').in('key', ['support_whatsapp', 'support_telegram']);
+
+            if (error) {
+                console.error('Erro ao buscar links de suporte:', error);
+                return;
+            }
+
             const links = { whatsapp: '', telegram: '' };
-            data?.forEach(item => {
+            data?.forEach((item: any) => {
                 if (item.key === 'support_whatsapp') links.whatsapp = item.value;
                 if (item.key === 'support_telegram') links.telegram = item.value;
             });

@@ -8,4 +8,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Supabase URL or Anon Key is missing. Check your .env.local file.');
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+console.log("[Supabase] Init: ", { url: supabaseUrl ? 'OK' : 'MISSING', key: supabaseAnonKey ? 'OK' : 'MISSING' });
+
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+    auth: {
+        persistSession: true
+    },
+    global: {
+        fetch: (url, options) => globalThis.fetch(url, options)
+    }
+});
