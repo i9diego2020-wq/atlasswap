@@ -5,8 +5,14 @@ import * as ecc from 'tiny-secp256k1';
 import { SLIP77Factory } from 'slip77';
 import { supabase } from './supabase';
 
-// Garantir que usamos a instância UNIFICADA de Buffer definida no index.tsx
-const GlobalBuffer = (window as any).Buffer;
+// Auxiliar para obter Buffer de forma segura
+const getBuffer = () => {
+    const buf = (window as any).Buffer || (globalThis as any).Buffer;
+    if (!buf) {
+        console.warn("[Liquid] Buffer não disponível globalmente. Tentando polyfill local.");
+    }
+    return buf;
+};
 
 // Configurações extraídas do Descriptor
 const MASTER_BLINDING_KEY = 'd8dd37b1265d625c70c5a70edc6dbbb906f2765ddf4dc29a4fc396e92659ca19';
@@ -20,8 +26,8 @@ let cryptoTools: { bip32: any, slip77: any } | null = null;
 const initTools = () => {
     if (cryptoTools) return cryptoTools;
     try {
-        const CurrentBuffer = (window as any).Buffer || GlobalBuffer;
-        if (!CurrentBuffer) {
+        const Buffer = getBuffer();
+        if (!Buffer) {
             console.error("[Liquid] Buffer não disponível globalmente.");
             throw new Error("Polyfill de Buffer não encontrado. Verifique a inicialização do aplicativo.");
         }
@@ -86,6 +92,7 @@ export const deriveLiquidAddress = (index: number) => {
     try {
         const { bip32, slip77 } = initTools();
         const network = liquid.networks.liquid;
+        const Buffer = getBuffer();
 
         // 1. Derivar chave pública
         const node = bip32.fromBase58(XPUB, network);
@@ -93,21 +100,21 @@ export const deriveLiquidAddress = (index: number) => {
         const publicKey = child.publicKey;
 
         // 2. Criar script e chaves de blindagem
-        const p2wpkh = liquid.payments.p2wpkh({ pubkey: GlobalBuffer.from(publicKey), network });
-        const slip77Node = slip77.fromMasterBlindingKey(GlobalBuffer.from(MASTER_BLINDING_KEY, 'hex'));
-        const blindingKeys = slip77Node.derive(GlobalBuffer.from(p2wpkh.output!));
+        const p2wpkh = liquid.payments.p2wpkh({ pubkey: Buffer.from(publicKey), network });
+        const slip77Node = slip77.fromMasterBlindingKey(Buffer.from(MASTER_BLINDING_KEY, 'hex'));
+        const blindingKeys = slip77Node.derive(Buffer.from(p2wpkh.output!));
 
         // 3. Gerar endereço confidencial
         const payment = liquid.payments.p2wpkh({
-            pubkey: GlobalBuffer.from(publicKey),
-            blindkey: GlobalBuffer.from(blindingKeys.publicKey),
+            pubkey: Buffer.from(publicKey),
+            blindkey: Buffer.from(blindingKeys.publicKey),
             network
         });
 
         return {
             address: payment.confidentialAddress!,
             unconfidentialAddress: payment.address!,
-            blindingPrivateKey: GlobalBuffer.from(blindingKeys.privateKey!).toString('hex')
+            blindingPrivateKey: Buffer.from(blindingKeys.privateKey!).toString('hex')
         };
     } catch (err: any) {
         console.error("[Liquid] Erro na derivação:", err);
