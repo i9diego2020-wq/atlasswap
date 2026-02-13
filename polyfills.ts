@@ -21,7 +21,9 @@ Buffer.isBuffer = function (obj: any): obj is Buffer {
             (obj as any)._isBuffer === true ||
             (obj as any).isBuffer === true ||
             obj.constructor?.name === 'Buffer' ||
-            obj.constructor?.name === 'u'
+            obj.constructor?.name === 'Uint8Array' ||
+            obj.constructor?.name === 'u' ||
+            obj.constructor?.name === 'n'
         ))
     );
 };

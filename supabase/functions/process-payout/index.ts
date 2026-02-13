@@ -34,29 +34,40 @@ serve(async (req) => {
         const amountInUnits = (record.amount_usdt * 1000000).toFixed(0)
         const engineUrl = `${ENGINE_URL}/backend-wallet/${CHAIN_ID}/extend-erc20/transfer`
 
-        const response = await fetch(engineUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                'x-backend-wallet-address': BACKEND_WALLET
-            },
-            body: JSON.stringify({
-                toAddress: record.wallet_address,
-                amount: amountInUnits,
-                tokenAddress: USDT_ADDRESS
+        let response;
+        try {
+            response = await fetch(engineUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                    'x-backend-wallet-address': BACKEND_WALLET
+                },
+                body: JSON.stringify({
+                    toAddress: record.wallet_address,
+                    amount: amountInUnits,
+                    tokenAddress: USDT_ADDRESS
+                })
             })
-        })
+        } catch (fetchErr: any) {
+            console.error("[Payout] Erro de rede/fetch:", fetchErr)
+            await supabase
+                .from('transactions')
+                .update({ status: 'failed', error_log: `Network Error: ${fetchErr.message}` })
+                .eq('id', record.id)
+            return new Response(JSON.stringify({ error: "Erro de conexão com a Engine" }), { status: 500 })
+        }
 
         const data = await response.json()
 
         if (!response.ok) {
             console.error("[Payout] Erro Thirdweb Engine:", data)
+            const errorMsg = data.error?.message || response.statusText || "Erro desconhecido na Engine"
             await supabase
                 .from('transactions')
-                .update({ status: 'failed', error_log: data.error?.message })
+                .update({ status: 'failed', error_log: errorMsg })
                 .eq('id', record.id)
-            throw new Error("Falha no envio via Thirdweb")
+            return new Response(JSON.stringify({ error: errorMsg }), { status: 400 })
         }
 
         // 4. Sucesso no disparo
@@ -70,7 +81,8 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({ success: true, data }), { status: 200 })
 
-    } catch (error) {
+    } catch (error: any) {
+        console.error("[Payout] Erro inesperado:", error)
         return new Response(JSON.stringify({ error: error.message }), { status: 500 })
     }
 })

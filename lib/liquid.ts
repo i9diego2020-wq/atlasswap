@@ -9,8 +9,25 @@ import { supabase } from './supabase';
 // this is the ultimate fix for "Expected Buffer, got u"
 try {
     const liquidTypes: any = (liquid as any).types || (liquid as any).typeforce;
-    if (liquidTypes && liquidTypes.Buffer) {
-        liquidTypes.Buffer = (window as any).Buffer?.isBuffer || Buffer.isBuffer;
+    if (liquidTypes) {
+        // Ultimate override for Buffer checks in typeforce
+        const isBufferResilient = (val: any) => {
+            return Buffer.isBuffer(val) ||
+                (val && (val._isBuffer || val.constructor?.name === 'Buffer' || val.constructor?.name === 'u' || val.constructor?.name === 'Uint8Array' || val.constructor?.name === 'n'));
+        };
+
+        if (liquidTypes.Buffer) liquidTypes.Buffer = isBufferResilient;
+
+        // Also patch the main typeforce if accessible
+        if (typeof liquidTypes === 'function') {
+            const originalTypeforce = liquidTypes;
+            (liquid as any).typeforce = (type: any, value: any, strict: any) => {
+                if (type === 'Buffer' || type === liquidTypes.Buffer) {
+                    if (isBufferResilient(value)) return;
+                }
+                return originalTypeforce(type, value, strict);
+            };
+        }
     }
 } catch (e) {
     console.warn('Could not patch liquid types directly', e);
@@ -96,5 +113,7 @@ export async function getNextLiquidIndex() {
     // Se não houver transações, começa do 0
     if (!data || data.length === 0) return 0;
 
+    // Extrair índices dos endereços (lq1... ou usar o count como fallback seguro se não tivermos os índices salvos)
+    // Para maior robustez, vamos apenas contar o número de registros, mas garantindo que não estamos pegando do cache
     return data.length;
 }
