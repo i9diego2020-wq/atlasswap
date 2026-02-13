@@ -30,6 +30,32 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
   const [paymentDetected, setPaymentDetected] = useState(false);
   const [txStatus, setTxStatus] = useState<string>('pending');
 
+  // Recupera estado salvo se houver uma transação em andamento
+  useEffect(() => {
+    const savedTxId = localStorage.getItem('active_swap_tx_id');
+    const savedStep = localStorage.getItem('active_swap_step') as Step;
+    const savedAddress = localStorage.getItem('active_swap_liquid_address');
+
+    if (savedTxId && savedStep === 'success') {
+      setCurrentTxId(savedTxId);
+      setStep('success');
+      if (savedAddress) setLiquidAddress(savedAddress);
+    }
+  }, []);
+
+  // Salva estado no localStorage
+  useEffect(() => {
+    if (step === 'success' && currentTxId) {
+      localStorage.setItem('active_swap_tx_id', currentTxId);
+      localStorage.setItem('active_swap_step', step);
+      localStorage.setItem('active_swap_liquid_address', liquidAddress);
+    } else if (step === 'form') {
+      localStorage.removeItem('active_swap_tx_id');
+      localStorage.removeItem('active_swap_step');
+      localStorage.removeItem('active_swap_liquid_address');
+    }
+  }, [step, currentTxId, liquidAddress]);
+
 
   // Busca cotação real da Binance
   useEffect(() => {
@@ -250,7 +276,11 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
             setPaymentDetected(false);
             setTxStatus('pending');
             setCurrentTxId('');
+            localStorage.removeItem('active_swap_tx_id');
+            localStorage.removeItem('active_swap_step');
+            localStorage.removeItem('active_swap_liquid_address');
           }}
+
           className="w-full py-6 bg-indigo-600 text-white font-black rounded-3xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-[0.98]"
         >
           Fazer Novo Swap
