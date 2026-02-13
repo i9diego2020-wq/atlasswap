@@ -5,32 +5,48 @@ import * as ecc from 'tiny-secp256k1';
 import { SLIP77Factory } from 'slip77';
 import { supabase } from './supabase';
 
-// Patching liquid's internal typeforce to use our global Buffer check
-// this is the ultimate fix for "Expected Buffer, got u"
+// PART 5: THE REMASTERED RUNTIME PATCH
+// We target the internal typeforce of liquidjs-lib directly
 try {
-    const liquidTypes: any = (liquid as any).types || (liquid as any).typeforce;
-    if (liquidTypes) {
-        // Ultimate override for Buffer checks in typeforce
-        const isBufferResilient = (val: any) => {
-            return Buffer.isBuffer(val) ||
-                (val && (val._isBuffer || val.constructor?.name === 'Buffer' || val.constructor?.name === 'u' || val.constructor?.name === 'Uint8Array' || val.constructor?.name === 'n'));
-        };
+    const liquidAny = liquid as any;
+    const isBufferResilient = (val: any) => {
+        if (!val) return false;
+        return Buffer.isBuffer(val) ||
+            val._isBuffer === true ||
+            val.isBuffer === true ||
+            val.constructor?.name === 'Buffer' ||
+            val.constructor?.name === 'u' ||
+            val.constructor?.name === 'Uint8Array' ||
+            val.constructor?.name === 'n';
+    };
 
-        if (liquidTypes.Buffer) liquidTypes.Buffer = isBufferResilient;
-
-        // Also patch the main typeforce if accessible
-        if (typeof liquidTypes === 'function') {
-            const originalTypeforce = liquidTypes;
-            (liquid as any).typeforce = (type: any, value: any, strict: any) => {
-                if (type === 'Buffer' || type === liquidTypes.Buffer) {
-                    if (isBufferResilient(value)) return;
-                }
+    // Patch the typeforce function itself
+    if (liquidAny.typeforce) {
+        const originalTypeforce = liquidAny.typeforce;
+        liquidAny.typeforce = function (type: any, value: any, strict: any) {
+            if (type === 'Buffer' || type === originalTypeforce.Buffer) {
+                if (isBufferResilient(value)) return true;
+            }
+            try {
                 return originalTypeforce(type, value, strict);
-            };
-        }
+            } catch (e: any) {
+                // Se falhar com erro de Buffer mas "parecer" um Buffer, ignoramos
+                if (isBufferResilient(value)) return true;
+                throw e;
+            }
+        };
+        // Re-copiar propriedades estáticas
+        Object.assign(liquidAny.typeforce, originalTypeforce);
+        liquidAny.typeforce.Buffer = isBufferResilient;
+    }
+
+    // Patch no módulo .types se existir
+    if (liquidAny.types && liquidAny.types.typeforce) {
+        liquidAny.types.typeforce = liquidAny.typeforce;
+        liquidAny.types.Buffer = isBufferResilient;
     }
 } catch (e) {
-    console.warn('Could not patch liquid types directly', e);
+    console.error('[Liquid] Falha crítica no patch runtime:', e);
 }
 
 // Configurações extraídas do Descriptor

@@ -7,10 +7,11 @@ import { Buffer } from 'buffer';
 // 2. AGGRESSIVE CONSTRUCTOR PATCHING
 // This forces .name to be 'Buffer' or 'Uint8Array' even when minified to 'u' or 'n'
 try {
-    Object.defineProperty(Buffer, 'name', { value: 'Buffer', configurable: true });
-    Object.defineProperty(Uint8Array, 'name', { value: 'Uint8Array', configurable: true });
-    if (Buffer.prototype.constructor) {
-        Object.defineProperty(Buffer.prototype.constructor, 'name', { value: 'Buffer', configurable: true });
+    if (typeof (Buffer as any) !== 'undefined') {
+        Object.defineProperty(Buffer, 'name', { value: 'Buffer', configurable: true, writable: true });
+    }
+    if (typeof (Uint8Array as any) !== 'undefined') {
+        Object.defineProperty(Uint8Array, 'name', { value: 'Uint8Array', configurable: true, writable: true });
     }
 } catch (e) {
     console.warn('Could not force constructor names', e);
