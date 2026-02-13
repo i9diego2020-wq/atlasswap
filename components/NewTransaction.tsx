@@ -134,9 +134,10 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
 
       if (error) throw error;
       setStep('payment');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao iniciar swap:', err);
-      alert('Erro ao processar. Tente novamente.');
+      const errMsg = err.message || err.toString();
+      alert(`Erro ao processar: ${errMsg}. Tente novamente.`);
     } finally {
       setLoading(false);
     }

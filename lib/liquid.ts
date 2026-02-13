@@ -1,15 +1,16 @@
-
 import * as liquid from 'liquidjs-lib';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
 import { SLIP77Factory } from 'slip77';
 import { supabase } from './supabase';
 
-// Auxiliar para obter Buffer de forma segura
+/**
+ * Auxiliar para obter Buffer de forma segura no runtime.
+ */
 const getBuffer = () => {
     const buf = (window as any).Buffer || (globalThis as any).Buffer;
     if (!buf) {
-        console.warn("[Liquid] Buffer não disponível globalmente. Tentando polyfill local.");
+        throw new Error("Buffer não inicializado. Verifique os polyfills.");
     }
     return buf;
 };
@@ -26,12 +27,6 @@ let cryptoTools: { bip32: any, slip77: any } | null = null;
 const initTools = () => {
     if (cryptoTools) return cryptoTools;
     try {
-        const Buffer = getBuffer();
-        if (!Buffer) {
-            console.error("[Liquid] Buffer não disponível globalmente.");
-            throw new Error("Polyfill de Buffer não encontrado. Verifique a inicialização do aplicativo.");
-        }
-
         if (!ecc || typeof ecc.pointAdd !== 'function') {
             console.error("[Liquid] tiny-secp256k1 falhou ao carregar ou não é compatível.");
             throw new Error("Módulo Secp256k1 não carregado corretamente.");
