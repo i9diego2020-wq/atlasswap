@@ -22,9 +22,12 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
 
   // Estados do Pagamento Liquid
   const [liquidAddress, setLiquidAddress] = useState('');
+  const [currentTxId, setCurrentTxId] = useState('');
   const [liquidTxId, setLiquidTxId] = useState('');
   const [copied, setCopied] = useState(false);
   const [paymentDetected, setPaymentDetected] = useState(false);
+  const [txStatus, setTxStatus] = useState<string>('pending');
+
 
   // Busca cotação real da Binance
   useEffect(() => {
@@ -75,14 +78,38 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
             })
             .eq('deposit_address', liquidAddress);
 
-          // Iniciamos a transição para a tela de sucesso, 
-          // mas informando que o processamento do USDT começou.
-          setTimeout(() => setStep('success'), 2000);
+          // Iniciamos a transição para a tela de sucesso (Timeline), 
+          // mas SEM o timeout de voltar automático.
+          setStep('success');
+          setTxStatus('confirmed_depix');
         }
       }, 10000); // A cada 10 segundos
     }
     return () => clearInterval(interval);
   }, [step, liquidAddress, paymentDetected]);
+
+  // Monitoramento do Status da Transação (Timeline)
+  useEffect(() => {
+    let interval: any;
+    if (step === 'success' && currentTxId) {
+      interval = setInterval(async () => {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('status, usdt_tx_hash')
+          .eq('id', currentTxId)
+          .single();
+
+        if (data && !error) {
+          setTxStatus(data.status);
+          if (data.status === 'usdt_sent' && data.usdt_tx_hash) {
+            setLiquidTxId(data.usdt_tx_hash);
+          }
+        }
+      }, 5000); // A cada 5 segundos na tela de timeline
+    }
+    return () => clearInterval(interval);
+  }, [step, currentTxId]);
+
 
   const usdtQuote = usdtPrice;
   const numericAmount = parseFloat(amount) || 0;
@@ -111,6 +138,7 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
     setPaymentDetected(false); // Garantir que está resetado
     try {
       const txId = `TX-${Math.floor(Math.random() * 90000) + 10000}`;
+      setCurrentTxId(txId);
 
       // 1. Obter próximo índice Liquid
       const index = await getNextLiquidIndex();
@@ -146,15 +174,59 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
   // --- RENDERS ---
 
   if (step === 'success') {
+    const isStep1Done = ['confirmed_depix', 'usdt_sending', 'usdt_sent'].includes(txStatus);
+    const isStep2Done = ['usdt_sending', 'usdt_sent'].includes(txStatus);
+    const isStep3Done = ['usdt_sent'].includes(txStatus);
+
     return (
-      <div className="max-w-2xl mx-auto mt-12 bg-white p-12 rounded-[3.5rem] border border-gray-100 shadow-2xl shadow-indigo-100/50 text-center animate-in zoom-in duration-500">
-        <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-emerald-50">
-          <CheckCircle2 size={48} />
+      <div className="max-w-2xl mx-auto mt-12 bg-white p-12 rounded-[3.5rem] border border-gray-100 shadow-2xl shadow-indigo-100/50 animate-in zoom-in duration-500">
+        <h2 className="text-3xl font-black text-gray-800 mb-8 text-center tracking-tight">Status da Transação</h2>
+
+        <div className="relative space-y-12 mb-12">
+          {/* Vertical Line */}
+          <div className="absolute left-[27px] top-2 bottom-2 w-0.5 bg-gray-100"></div>
+
+          {/* Step 1: Depix Confirmado */}
+          <div className="relative flex items-center space-x-6">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center z-10 transition-colors shadow-lg ${isStep1Done ? 'bg-emerald-500 text-white shadow-emerald-100' : 'bg-gray-100 text-gray-400 shadow-transparent'}`}>
+              <CheckCircle2 size={24} />
+            </div>
+            <div className="flex-1">
+              <h4 className={`font-black text-lg ${isStep1Done ? 'text-gray-800' : 'text-gray-400'}`}>Depix Confirmado</h4>
+              <p className="text-xs font-medium text-gray-500">Recebemos seu depósito em Liquid BTC.</p>
+            </div>
+          </div>
+
+          {/* Step 2: Enviando USDT */}
+          <div className="relative flex items-center space-x-6">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center z-10 transition-colors shadow-lg ${isStep2Done ? (isStep3Done ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white animate-pulse') : 'bg-gray-100 text-gray-400'}`}>
+              <DollarSign size={24} />
+            </div>
+            <div className="flex-1">
+              <h4 className={`font-black text-lg ${isStep2Done ? 'text-gray-800' : 'text-gray-400'}`}>Enviando USDT</h4>
+              <p className="text-xs font-medium text-gray-500">Nossa Engine está processando o envio para Polygon.</p>
+            </div>
+          </div>
+
+          {/* Step 3: Envio USDT Confirmado */}
+          <div className="relative flex items-center space-x-6">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center z-10 transition-colors shadow-lg ${isStep3Done ? 'bg-emerald-500 text-white shadow-emerald-100' : 'bg-gray-100 text-gray-400 shadow-transparent'}`}>
+              <ShieldCheck size={24} />
+            </div>
+            <div className="flex-1">
+              <h4 className={`font-black text-lg ${isStep3Done ? 'text-gray-800' : 'text-gray-400'}`}>Envio USDT Confirmado</h4>
+              <p className="text-xs font-medium text-gray-500">O USDT já foi enviado para sua carteira.</p>
+            </div>
+          </div>
         </div>
-        <h2 className="text-4xl font-black text-gray-800 mb-4 tracking-tight">Depósito Confirmado!</h2>
-        <p className="text-gray-500 font-medium mb-12 leading-relaxed px-8">
-          Recebemos seu depósito Liquid BTC. Nossa Engine está processando o envio de USDT para sua carteira Polygon agora mesmo.
-        </p>
+
+        {isStep3Done && (
+          <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 mb-8 animate-in fade-in slide-in-from-top-4">
+            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">HASH DA TRANSAÇÃO POLYGON</p>
+            <code className="text-[10px] font-bold text-emerald-800 break-all">{liquidTxId}</code>
+          </div>
+        )}
+
         <button
           onClick={() => {
             setStep('form');
@@ -162,6 +234,8 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
             setWallet('');
             setLiquidAddress('');
             setPaymentDetected(false);
+            setTxStatus('pending');
+            setCurrentTxId('');
           }}
           className="w-full py-6 bg-indigo-600 text-white font-black rounded-3xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-[0.98]"
         >
@@ -171,6 +245,7 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
     );
   }
 
+
   if (step === 'payment') {
     return (
       <div className="max-w-4xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-6 duration-500">
@@ -179,8 +254,9 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
           <div className="inline-flex items-center px-6 py-3 bg-amber-50 border border-amber-100 rounded-2xl text-amber-700 space-x-3 animate-bounce">
             <Info size={20} />
             <span className="text-lg font-black uppercase tracking-tight">
-              Envie exatamente: R$ {numericAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              Envie exatamente: {numericAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} Depix
             </span>
+
           </div>
           <p className="text-gray-500 font-medium">O valor será convertido automaticamente para USDT na rede Polygon.</p>
         </div>
@@ -274,8 +350,10 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 className="w-full bg-gray-50 border-none focus:ring-4 focus:ring-indigo-500/10 rounded-2xl px-6 py-5 text-lg font-bold text-gray-800 transition-all outline-none"
               />
+
               <span className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase rounded-lg">DEPIX</span>
             </div>
           </div>
