@@ -1,9 +1,7 @@
-
 import { Buffer } from 'buffer';
 
-if (typeof (window as any).Buffer === 'undefined') {
-    (window as any).Buffer = Buffer;
-}
+(window as any).Buffer = Buffer;
+(globalThis as any).Buffer = Buffer;
 
 // Polyfill process for libraries that expect it
 if (typeof (window as any).process === 'undefined') {

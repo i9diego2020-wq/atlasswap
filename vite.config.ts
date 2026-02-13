@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => {
       wasm(),
       topLevelAwait(),
       nodePolyfills({
-        include: ['buffer', 'process', 'util', 'stream', 'events'],
+        include: ['process', 'util', 'stream', 'events'],
         globals: {
-          Buffer: true,
+          Buffer: false,
           global: true,
           process: true,
         },
@@ -39,6 +39,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        'buffer': path.resolve(__dirname, 'node_modules/buffer'),
       }
     }
   };
