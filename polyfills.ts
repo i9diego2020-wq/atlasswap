@@ -1,5 +1,7 @@
-import './lib/buffer-singleton';
-import { Buffer } from './lib/buffer-singleton';
+import { Buffer } from 'buffer';
+
+(window as any).Buffer = Buffer;
+(globalThis as any).Buffer = Buffer;
 
 // Note: process and other polyfills are partialy handled by vite-plugin-node-polyfills
 // but we keep process.nextTick for old libraries.

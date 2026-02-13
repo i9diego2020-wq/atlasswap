@@ -1,4 +1,4 @@
-import { Buffer } from './buffer-singleton';
+import { Buffer } from 'buffer';
 import * as liquid from 'liquidjs-lib';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
@@ -82,21 +82,21 @@ export const deriveLiquidAddress = (index: number) => {
 
         // 2. Criar script e chaves de blindagem
         // IMPORTANT: Usar o mesmo Buffer constructor para tudo para evitar erro "got Uint8Array"
-        const p2wpkh = liquid.payments.p2wpkh({ pubkey: (Buffer as any).from(publicKey), network });
-        const slip77Node = slip77.fromMasterBlindingKey((Buffer as any).from(MASTER_BLINDING_KEY, 'hex'));
-        const blindingKeys = slip77Node.derive((Buffer as any).from(p2wpkh.output!));
+        const p2wpkh = liquid.payments.p2wpkh({ pubkey: Buffer.from(publicKey), network });
+        const slip77Node = slip77.fromMasterBlindingKey(Buffer.from(MASTER_BLINDING_KEY, 'hex'));
+        const blindingKeys = slip77Node.derive(Buffer.from(p2wpkh.output!));
 
         // 3. Gerar endereço confidencial
         const payment = liquid.payments.p2wpkh({
-            pubkey: (Buffer as any).from(publicKey),
-            blindkey: (Buffer as any).from(blindingKeys.publicKey),
+            pubkey: Buffer.from(publicKey),
+            blindkey: Buffer.from(blindingKeys.publicKey),
             network
         });
 
         return {
             address: payment.confidentialAddress!,
             unconfidentialAddress: payment.address!,
-            blindingPrivateKey: (Buffer as any).from(blindingKeys.privateKey!).toString('hex')
+            blindingPrivateKey: Buffer.from(blindingKeys.privateKey!).toString('hex')
         };
     } catch (err: any) {
         console.error("[Liquid] Erro na derivação:", err);
