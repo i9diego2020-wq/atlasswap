@@ -31,9 +31,10 @@ const AdminSettings: React.FC = () => {
 
             data?.forEach(item => {
                 if (item.key === 'spread') setSpread(item.value.toString());
-                if (item.key === 'support_whatsapp') setWhatsapp(JSON.parse(JSON.stringify(item.value)));
-                if (item.key === 'support_telegram') setTelegram(JSON.parse(JSON.stringify(item.value)));
-                // Taxas ainda são estáticas ou podem ser migradas depois
+                if (item.key === 'support_whatsapp') setWhatsapp(item.value.toString());
+                if (item.key === 'support_telegram') setTelegram(item.value.toString());
+                if (item.key === 'variable_fee') setFee(item.value.toString());
+                if (item.key === 'fixed_fee') setFixedFee(item.value.toString());
             });
         } catch (err) {
             console.error('Erro ao buscar configurações:', err);
@@ -49,7 +50,9 @@ const AdminSettings: React.FC = () => {
             const updates = [
                 { key: 'spread', value: Number(spread) },
                 { key: 'support_whatsapp', value: whatsapp },
-                { key: 'support_telegram', value: telegram }
+                { key: 'support_telegram', value: telegram },
+                { key: 'variable_fee', value: Number(fee) },
+                { key: 'fixed_fee', value: Number(fixedFee) }
             ];
 
             const { error } = await supabase

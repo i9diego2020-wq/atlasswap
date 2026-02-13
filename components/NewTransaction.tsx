@@ -19,6 +19,9 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
   const [loadingQuote, setLoadingQuote] = useState(true);
   const [usdtPrice, setUsdtPrice] = useState(5.26);
   const [showFixedFeeInfo, setShowFixedFeeInfo] = useState(false);
+  const [variableFeePercent, setVariableFeePercent] = useState(1);
+  const [dynamicFixedFee, setDynamicFixedFee] = useState(5);
+
 
   // Estados do Pagamento Liquid
   const [liquidAddress, setLiquidAddress] = useState('');
@@ -46,6 +49,17 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
 
           const currentSpread = spreadData ? Number(spreadData.value) : 0.05;
           setUsdtPrice(realPrice + currentSpread);
+
+          // Buscar taxas
+          const { data: settingsData } = await supabase
+            .from('settings')
+            .select('key, value')
+            .in('key', ['variable_fee', 'fixed_fee']);
+
+          settingsData?.forEach(setting => {
+            if (setting.key === 'variable_fee') setVariableFeePercent(Number(setting.value));
+            if (setting.key === 'fixed_fee') setDynamicFixedFee(Number(setting.value));
+          });
         }
       } catch (err) {
         console.error('Erro ao buscar cotação USDT:', err);
@@ -113,10 +127,11 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
 
   const usdtQuote = usdtPrice;
   const numericAmount = parseFloat(amount) || 0;
-  const fee1Percent = numericAmount * 0.01;
-  const fixedFee = (numericAmount > 0 && numericAmount < 100) ? 5.00 : 0.00;
-  const amountAfterFees = Math.max(0, numericAmount - fee1Percent - fixedFee);
+  const feeVariável = numericAmount * (variableFeePercent / 100);
+  const fixedFee = (numericAmount > 0 && numericAmount < 100) ? dynamicFixedFee : 0.00;
+  const amountAfterFees = Math.max(0, numericAmount - feeVariável - fixedFee);
   const usdtReceived = amountAfterFees / usdtQuote;
+
 
   const isValidWallet = (address: string) => /^0x[a-fA-F0-9]{40}$/.test(address);
   const isWalletValid = wallet === '' || isValidWallet(wallet);
@@ -400,9 +415,10 @@ const NewTransaction: React.FC<NewTransactionProps> = ({ userId }) => {
           <p className="text-xl font-black text-gray-800">R$ {numericAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-rose-500">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">TAXA (1%)</p>
-          <p className="text-xl font-black">R$ {fee1Percent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">TAXA ({variableFeePercent}%)</p>
+          <p className="text-xl font-black">R$ {feeVariável.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
         </div>
+
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
             TAXA FIXA <Info size={10} className="text-gray-300" />
