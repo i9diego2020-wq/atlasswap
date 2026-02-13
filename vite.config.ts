@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       nodePolyfills({
         include: ['buffer', 'process', 'util', 'stream', 'events'],
         globals: {
-          Buffer: false,
+          Buffer: true,
           global: true,
           process: true,
         },
@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'Buffer': 'globalThis.Buffer',
+      'global': 'globalThis',
     },
     optimizeDeps: {
       esbuildOptions: {
@@ -40,6 +40,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        'buffer': path.resolve(__dirname, 'lib/buffer-singleton.ts'),
       }
     }
   };
