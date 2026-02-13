@@ -1,7 +1,23 @@
 import { Buffer } from 'buffer';
 
-(window as any).Buffer = Buffer;
-(globalThis as any).Buffer = Buffer;
+const StandardBuffer = Buffer;
+
+// Standardize global instance early
+(window as any).Buffer = StandardBuffer;
+(globalThis as any).Buffer = StandardBuffer;
+
+// Resilience Patch: Recognize minified or twin Buffer instances
+const originalIsBuffer = StandardBuffer.isBuffer;
+StandardBuffer.isBuffer = function (obj: any): obj is Buffer {
+    return (
+        originalIsBuffer(obj) ||
+        (!!obj && (
+            (obj as any)._isBuffer === true ||
+            obj.constructor?.name === 'Buffer' ||
+            obj.constructor?.name === 'u'
+        ))
+    );
+};
 
 // Note: process and other polyfills are partialy handled by vite-plugin-node-polyfills
 // but we keep process.nextTick for old libraries.

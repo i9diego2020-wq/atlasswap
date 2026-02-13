@@ -1,4 +1,5 @@
-import { Buffer } from 'buffer';
+// Usamos a referência global para garantir singleton entre bibliotecas
+const Buffer = (globalThis as any).Buffer;
 import * as liquid from 'liquidjs-lib';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
