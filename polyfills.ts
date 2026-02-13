@@ -1,14 +1,20 @@
 import { Buffer } from 'buffer';
 
-const StandardBuffer = Buffer;
+// Force global Buffer to be a standard singleton
+(window as any).Buffer = Buffer;
+(globalThis as any).Buffer = Buffer;
 
-// Standardize global instance early
-(window as any).Buffer = StandardBuffer;
-(globalThis as any).Buffer = StandardBuffer;
+// MAGIC PROTO-PATCH: The ultimate fix for "Expected Buffer, got u" in production.
+// This works because almost ALL Buffer versions check obj._isBuffer === true.
+// Since Node Buffers inherit from Uint8Array in the browser, patching the primary
+// prototype ensures that BOTH minified ('u') and twin Buffer instances pass the test.
+if (typeof Uint8Array !== 'undefined') {
+    (Uint8Array.prototype as any)._isBuffer = true;
+}
 
-// Nuclear Patch: Recognize minified or twin Buffer instances
-const originalIsBuffer = StandardBuffer.isBuffer;
-StandardBuffer.isBuffer = function (obj: any): obj is Buffer {
+// Ensure Buffer.isBuffer itself is also resilient
+const originalIsBuffer = Buffer.isBuffer;
+Buffer.isBuffer = function (obj: any): obj is Buffer {
     return (
         originalIsBuffer(obj) ||
         (!!obj && (
@@ -20,22 +26,7 @@ StandardBuffer.isBuffer = function (obj: any): obj is Buffer {
     );
 };
 
-// Nuclear Patch 2: Add flag to prototype to satisfy typeforce and libraries
-// that check for ._isBuffer without calling Buffer.isBuffer() (like some versions of typeforce)
-(Uint8Array.prototype as any)._isBuffer = true;
-
-// Targeted Patch: If typeforce is loaded, force its Buffer type to use our resilient check
-try {
-    const typeforce = (window as any).typeforce || (globalThis as any).typeforce;
-    if (typeforce && typeforce.Buffer) {
-        typeforce.Buffer = StandardBuffer.isBuffer;
-    }
-} catch (e) {
-    // Ignore if typeforce not yet loaded
-}
-
-// Note: process and other polyfills are partialy handled by vite-plugin-node-polyfills
-// but we keep process.nextTick for old libraries.
+// Polyfill process early to satisfy older crypto libraries
 if (typeof (window as any).process === 'undefined') {
     (window as any).process = {
         version: 'v16.0.0',
@@ -43,7 +34,6 @@ if (typeof (window as any).process === 'undefined') {
         env: {}
     };
 } else {
-    // Ensure version and nextTick exist even if process is partially defined
     const proc = (window as any).process;
     if (!proc.version) proc.version = 'v16.0.0';
     if (!proc.nextTick) proc.nextTick = (fn: any, ...args: any[]) => setTimeout(() => fn(...args), 0);

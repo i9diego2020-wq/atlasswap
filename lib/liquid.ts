@@ -1,5 +1,4 @@
-// Usamos a referência global para garantir singleton entre bibliotecas
-const Buffer = (globalThis as any).Buffer;
+import { Buffer } from 'buffer';
 import * as liquid from 'liquidjs-lib';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
@@ -11,7 +10,7 @@ import { supabase } from './supabase';
 try {
     const liquidTypes: any = (liquid as any).types || (liquid as any).typeforce;
     if (liquidTypes && liquidTypes.Buffer) {
-        liquidTypes.Buffer = Buffer.isBuffer;
+        liquidTypes.Buffer = (window as any).Buffer?.isBuffer || Buffer.isBuffer;
     }
 } catch (e) {
     console.warn('Could not patch liquid types directly', e);
@@ -21,127 +20,81 @@ try {
 const MASTER_BLINDING_KEY = 'd8dd37b1265d625c70c5a70edc6dbbb906f2765ddf4dc29a4fc396e92659ca19';
 const XPUB = 'xpub6BemYiVNp19a2ekdx6fqBGJ4zhKZv7oZTejaNsgG9156N816oWWr4sJ5Xk4fgd9q5t8dYHth2PukWxaPsVP57CAfgDbhaG1rGmuesxEsKeV';
 
-let cryptoTools: { bip32: any, slip77: any } | null = null;
+const bip32 = BIP32Factory(ecc);
+const slip77 = SLIP77Factory(ecc);
 
 /**
- * Inicializa as ferramentas criptográficas.
+ * Deriva um endereço Liquid a partir de um índice
  */
-const initTools = () => {
-    if (cryptoTools) return cryptoTools;
+export function deriveLiquidAddress(index: number) {
     try {
-        if (!Buffer) {
-            throw new Error("Polyfill de Buffer não encontrado. Verifique a configuração do Vite.");
-        }
-
-        if (!ecc || typeof ecc.pointAdd !== 'function') {
-            console.error("[Liquid] tiny-secp256k1 falhou ao carregar ou não é compatível.");
-            throw new Error("Módulo Secp256k1 não carregado corretamente.");
-        }
-
-        const bip32 = BIP32Factory(ecc);
-        const slip77 = SLIP77Factory(ecc);
-        cryptoTools = { bip32, slip77 };
-        return cryptoTools;
-    } catch (err) {
-        console.error("[Liquid] Erro crítico ao instanciar fábricas criptográficas:", err);
-        throw err;
-    }
-};
-
-/**
- * Busca o próximo índice disponível e o incrementa no Supabase.
- */
-export const getNextLiquidIndex = async () => {
-    try {
-        const { data, error } = await supabase
-            .from('settings')
-            .select('value')
-            .eq('key', 'liquid_last_index')
-            .single();
-
-        let currentIndex = 1;
-        if (error) {
-            if (error.code === 'PGRST116') {
-                await supabase.from('settings').insert([{ key: 'liquid_last_index', value: '1' }]);
-            } else {
-                console.error("[Liquid] Erro ao buscar índice:", error);
-            }
-        } else if (data) {
-            currentIndex = parseInt(data.value) + 1;
-        }
-
-        await supabase.from('settings').update({ value: currentIndex.toString() }).eq('key', 'liquid_last_index');
-        return currentIndex;
-    } catch (err) {
-        console.error("[Liquid] Falha na gestão de índice:", err);
-        return Math.floor(Math.random() * 1000) + 100;
-    }
-};
-
-/**
- * Deriva um endereço Liquid Confidencial.
- */
-export const deriveLiquidAddress = (index: number) => {
-    try {
-        const { bip32, slip77 } = initTools();
-        const network = liquid.networks.liquid;
-        if (!Buffer) throw new Error("Buffer indisponível na derivação.");
-
-        // 1. Derivar chave pública
-        const node = bip32.fromBase58(XPUB, network);
+        const node = bip32.fromBase58(XPUB);
         const child = node.derive(0).derive(index);
-        const publicKey = child.publicKey;
+        const pubkey = Buffer.from(child.publicKey);
 
-        // 2. Criar script e chaves de blindagem
-        // IMPORTANT: Usar o mesmo Buffer constructor para tudo para evitar erro "got Uint8Array"
-        const p2wpkh = liquid.payments.p2wpkh({ pubkey: Buffer.from(publicKey), network });
-        const slip77Node = slip77.fromMasterBlindingKey(Buffer.from(MASTER_BLINDING_KEY, 'hex'));
-        const blindingKeys = slip77Node.derive(Buffer.from(p2wpkh.output!));
-
-        // 3. Gerar endereço confidencial
-        const payment = liquid.payments.p2wpkh({
-            pubkey: Buffer.from(publicKey),
-            blindkey: Buffer.from(blindingKeys.publicKey),
-            network
+        const p2wpkh = liquid.payments.p2wpkh({
+            pubkey,
+            network: liquid.networks.liquid
         });
 
+        const blindingKey = slip77.fromSeed(Buffer.from(MASTER_BLINDING_KEY, 'hex')).derive(p2wpkh.output!);
+
+        const confidential = liquid.address.toConfidential(
+            p2wpkh.address!,
+            blindingKey.publicKey!
+        );
+
         return {
-            address: payment.confidentialAddress!,
-            unconfidentialAddress: payment.address!,
-            blindingPrivateKey: Buffer.from(blindingKeys.privateKey!).toString('hex')
+            address: confidential,
+            unconfidential: p2wpkh.address,
+            blindingKey: blindingKey.publicKey!.toString('hex')
         };
-    } catch (err: any) {
-        console.error("[Liquid] Erro na derivação:", err);
-        throw err;
+    } catch (error: any) {
+        console.error('Error deriving address:', error);
+        // Adicionamos um log mais detalhado para ajudar a debugar o typeforce no console do navegador
+        if (error.message?.includes('Expected Buffer')) {
+            console.error('DETAILED TYPEFORCE ERROR:', error);
+        }
+        throw error;
     }
-};
+}
 
 /**
- * Monitora um endereço via API Esplora
+ * Monitora um endereço em busca de depósitos
  */
-export const monitorAddress = async (address: string) => {
+export async function monitorAddress(address: string) {
     try {
-        const response = await fetch(`https://blockstream.info/liquid/api/address/${address}/utxo`);
-        const utxos = await response.json();
+        const response = await fetch(`https://blockstream.info/liquid/api/address/${address}/txs`);
+        const txs = await response.json();
 
-        if (!Array.isArray(utxos) || utxos.length === 0) {
-            return { received: false };
+        if (txs && txs.length > 0) {
+            // Verifica se houve algum output para o endereço com confirmação ou não
+            const lastTx = txs[0];
+            return { received: true, txid: lastTx.txid };
         }
-
-        const utxo = utxos[0];
-        const txResponse = await fetch(`https://blockstream.info/liquid/api/tx/${utxo.txid}`);
-        const txData = await txResponse.json();
-
-        return {
-            received: true,
-            txid: utxo.txid,
-            vout: utxo.vout,
-            value: utxo.value,
-            asset: utxo.asset,
-            confirmations: txData.status?.confirmed ? 1 : 0
-        };
-    } catch (err) {
-        console.error('[Liquid] Erro no monitoramento:', err);
-        return { error: 'Offline' };
+        return { received: false };
+    } catch (error) {
+        console.error('Error monitoring address:', error);
+        return { received: false };
     }
-};
+}
+
+/**
+ * Obtém o próximo índice disponível para derivação
+ */
+export async function getNextLiquidIndex() {
+    const { data, error } = await supabase
+        .from('transactions')
+        .select('deposit_address')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching transactions loop:', error);
+        return 0;
+    }
+
+    // Se não houver transações, começa do 0
+    if (!data || data.length === 0) return 0;
+
+    return data.length;
+}
