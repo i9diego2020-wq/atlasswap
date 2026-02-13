@@ -3,6 +3,7 @@ import * as liquid from 'liquidjs-lib';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
 import { SLIP77Factory } from 'slip77';
+import * as crypto from 'crypto';
 import { supabase } from './supabase';
 
 // PART 5: THE REMASTERED RUNTIME PATCH
@@ -70,17 +71,25 @@ export function deriveLiquidAddress(index: number) {
             network: liquid.networks.liquid
         }, { validate: false }); // DISABLING VALIDATION IN PRODUCTION
 
-        const blindingKey = slip77.fromSeed(Buffer.from(MASTER_BLINDING_KEY, 'hex')).derive(p2wpkh.output!);
+        // BLOCKSTREAM GREEN COMPATIBILITY: Green uses HMAC-SHA256 for blinding keys
+        // Standard SLIP-77 uses SHA512, but Green uses SHA256.
+        const masterBlindingKey = Buffer.from(MASTER_BLINDING_KEY, 'hex');
+        const script = p2wpkh.output!;
+
+        const hmac = crypto.createHmac('sha256', masterBlindingKey);
+        hmac.update(script);
+        const privateKey = hmac.digest().slice(0, 32);
+        const blindingPubKey = Buffer.from(ecc.pointFromScalar(privateKey, true)!);
 
         const confidential = liquid.address.toConfidential(
             p2wpkh.address!,
-            blindingKey.publicKey!
+            blindingPubKey
         );
 
         return {
             address: confidential,
             unconfidential: p2wpkh.address,
-            blindingKey: blindingKey.publicKey!.toString('hex')
+            blindingKey: blindingPubKey.toString('hex')
         };
     } catch (error: any) {
         console.error('Error deriving address:', error);
